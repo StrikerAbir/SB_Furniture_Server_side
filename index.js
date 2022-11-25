@@ -85,10 +85,22 @@ async function run() {
     //* single category products
     app.get("/categories/products", async (req, res) => {
       const id = parseInt(req.query.cat_id);
-      const filter = { category_id: id };
+        const filter = { category_id: id };
+        const category = await categoriesCollection.findOne(filter)
+        const name = category.category_name;
       const products = await productsCollection.find(filter).toArray();
-      res.send(products);
+      res.send({products,name});
     });
+      
+    //* single product
+      app.get('/product/:id', async (req, res) => {
+          const id = req.params.id
+        //   console.log(id);
+          const filter = { _id: ObjectId(id) };
+          const product = await productsCollection.findOne(filter);
+          res.send(product);
+    })
+      
   } finally {
   }
 }
