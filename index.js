@@ -122,16 +122,32 @@ async function run() {
 
       
     //* bookings
-      app.get('/bookings/:email', async (req, res) => {
+      app.get('/bookings/:email',verifyJWT, async (req, res) => {
           const email = req.params.email;
           const filter = { buyer_email: email };
           const items = await bookingsCollection.find(filter).toArray();
           res.send(items);
-      })
+        })
+
+        app.get('/booking/:id', async (req, res)=>{
+            const id = req.params.id;
+            // console.log(id);
+             const filter = { _id: ObjectId(id) };
+             const result = await bookingsCollection.findOne(filter);
+             res.send(result);
+        })
+
       app.post('/bookings', async (req, res) => {
           const booking = req.body;
           const result = await bookingsCollection.insertOne(booking);
           res.send(result)
+      })
+
+      app.delete('/bookings/:id', async (req, res)=>{
+           const id = req.params.id;
+           const filter = { _id: ObjectId(id) };
+           const result = await bookingsCollection.deleteOne(filter);
+           res.send(result);
       })
       
   } finally {
