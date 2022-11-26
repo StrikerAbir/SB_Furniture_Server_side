@@ -48,6 +48,7 @@ async function run() {
     const productsCollection = client.db("sbFurniture").collection("products");
     const usersCollection = client.db("sbFurniture").collection("users");
     const bookingsCollection = client.db("sbFurniture").collection("bookings");
+    const paymentsCollection = client.db("sbFurniture").collection("payments");
 
     //* JWT
     app.get("/jwt", async (req, res) => {
@@ -65,7 +66,7 @@ async function run() {
     //* Users
     app.post("/users", async (req, res) => {
       const user = req.body;
-      console.log(user);
+    //   console.log(user);
       const filter = { email: user.email };
       const email = await usersCollection.findOne(filter);
       if (email) {
@@ -78,7 +79,7 @@ async function run() {
 
     app.get("/users/userType/:email", async (req, res) => {
       const email = req.params.email;
-      console.log(email);
+    //   console.log(email);
       const query = { email: email };
       const user = await usersCollection.findOne(query);
       const userType = user?.user_type;
@@ -151,8 +152,9 @@ async function run() {
 
     // * payment related
     app.post("/create-payment-intent", async (req, res) => {
-      const booking = req.body;
-      const price = booking.price;
+        const booking = req.body;
+        
+      const price = parseInt(booking.resale_price);
       const amount = price * 100;
 
       const paymentIntent = await stripe.paymentIntents.create({
@@ -160,10 +162,28 @@ async function run() {
         amount: amount,
         payment_method_types: ["card"],
       });
+        // console.log(paymentIntent);
       res.send({
         clientSecret: paymentIntent.client_secret,
       });
     });
+      
+      app.post("/payments", async (req, res) => {
+        const payment = req.body;
+        const result = await paymentsCollection.insertOne(payment);
+        const id = payment.bookingId;
+        const filter = { _id: ObjectId(id) };
+        const updatedDoc = {
+          $set: {
+            status:"Paid",
+          },
+        };
+        const updatedResult = await bookingsCollection.updateOne(
+          filter,
+          updatedDoc
+        );
+        res.send(updatedResult);
+      });
       
       
   } finally {
