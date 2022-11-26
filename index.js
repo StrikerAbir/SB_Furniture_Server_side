@@ -46,6 +46,7 @@ async function run() {
       .collection("categories");
     const productsCollection = client.db("sbFurniture").collection("products");
     const usersCollection = client.db("sbFurniture").collection("users");
+    const bookingsCollection = client.db("sbFurniture").collection("bookings");
 
     //* JWT
     app.get("/jwt", async (req, res) => {
@@ -74,6 +75,17 @@ async function run() {
       }
     });
 
+      app.get('/users/userType/:email', async (req, res) => {
+          const email = req.params.email;
+          console.log(email); 
+              const query = { email: email };
+              const user = await usersCollection.findOne(query);
+                const userType = user?.user_type;
+              console.log(userType);
+              res.send({type: userType});
+
+      })
+
     //* categories
     app.get("/categories", async (req, res) => {
       const query = {};
@@ -92,14 +104,35 @@ async function run() {
       res.send({products,name});
     });
       
-    //* single product
+    //* single product for individual categories
       app.get('/product/:id', async (req, res) => {
           const id = req.params.id
         //   console.log(id);
           const filter = { _id: ObjectId(id) };
           const product = await productsCollection.findOne(filter);
           res.send(product);
-    })
+      })
+      
+    //* all products 
+      app.get('/products', async (req, res) => {
+          const query = {};
+          const products = await productsCollection.find(query).toArray();
+          res.send(products);
+      })
+
+      
+    //* bookings
+      app.get('/bookings/:email', async (req, res) => {
+          const email = req.params.email;
+          const filter = { buyer_email: email };
+          const items = await bookingsCollection.find(filter).toArray();
+          res.send(items);
+      })
+      app.post('/bookings', async (req, res) => {
+          const booking = req.body;
+          const result = await bookingsCollection.insertOne(booking);
+          res.send(result)
+      })
       
   } finally {
   }
