@@ -4,6 +4,7 @@ require("dotenv").config();
 const port = process.env.PORT || 1000;
 const app = express();
 const jwt = require("jsonwebtoken");
+const stripe = require("stripe")(process.env.STRIPE_SECRET);
 
 // middleware
 app.use(cors());
@@ -75,16 +76,15 @@ async function run() {
       }
     });
 
-      app.get('/users/userType/:email', async (req, res) => {
-          const email = req.params.email;
-          console.log(email); 
-              const query = { email: email };
-              const user = await usersCollection.findOne(query);
-                const userType = user?.user_type;
-              console.log(userType);
-              res.send({type: userType});
-
-      })
+    app.get("/users/userType/:email", async (req, res) => {
+      const email = req.params.email;
+      console.log(email);
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      const userType = user?.user_type;
+      console.log(userType);
+      res.send({ type: userType });
+    });
 
     //* categories
     app.get("/categories", async (req, res) => {
@@ -97,58 +97,74 @@ async function run() {
     //* single category products
     app.get("/categories/products", async (req, res) => {
       const id = parseInt(req.query.cat_id);
-        const filter = { category_id: id };
-        const category = await categoriesCollection.findOne(filter)
-        const name = category.category_name;
+      const filter = { category_id: id };
+      const category = await categoriesCollection.findOne(filter);
+      const name = category.category_name;
       const products = await productsCollection.find(filter).toArray();
-      res.send({products,name});
+      res.send({ products, name });
+    });
+
+    //* single product for individual categories
+    app.get("/product/:id", async (req, res) => {
+      const id = req.params.id;
+      //   console.log(id);
+      const filter = { _id: ObjectId(id) };
+      const product = await productsCollection.findOne(filter);
+      res.send(product);
+    });
+
+    //* all products
+    app.get("/products", async (req, res) => {
+      const query = {};
+      const products = await productsCollection.find(query).toArray();
+      res.send(products);
+    });
+
+    //* bookings
+    app.get("/bookings/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+      const filter = { buyer_email: email };
+      const items = await bookingsCollection.find(filter).toArray();
+      res.send(items);
+    });
+
+    app.get("/booking/:id", async (req, res) => {
+      const id = req.params.id;
+      // console.log(id);
+      const filter = { _id: ObjectId(id) };
+      const result = await bookingsCollection.findOne(filter);
+      res.send(result);
+    });
+
+    app.post("/bookings", async (req, res) => {
+      const booking = req.body;
+      const result = await bookingsCollection.insertOne(booking);
+      res.send(result);
+    });
+
+    app.delete("/bookings/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      const result = await bookingsCollection.deleteOne(filter);
+      res.send(result);
+    });
+
+    // * payment related
+    app.post("/create-payment-intent", async (req, res) => {
+      const booking = req.body;
+      const price = booking.price;
+      const amount = price * 100;
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        currency: "usd",
+        amount: amount,
+        payment_method_types: ["card"],
+      });
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
     });
       
-    //* single product for individual categories
-      app.get('/product/:id', async (req, res) => {
-          const id = req.params.id
-        //   console.log(id);
-          const filter = { _id: ObjectId(id) };
-          const product = await productsCollection.findOne(filter);
-          res.send(product);
-      })
-      
-    //* all products 
-      app.get('/products', async (req, res) => {
-          const query = {};
-          const products = await productsCollection.find(query).toArray();
-          res.send(products);
-      })
-
-      
-    //* bookings
-      app.get('/bookings/:email',verifyJWT, async (req, res) => {
-          const email = req.params.email;
-          const filter = { buyer_email: email };
-          const items = await bookingsCollection.find(filter).toArray();
-          res.send(items);
-        })
-
-        app.get('/booking/:id', async (req, res)=>{
-            const id = req.params.id;
-            // console.log(id);
-             const filter = { _id: ObjectId(id) };
-             const result = await bookingsCollection.findOne(filter);
-             res.send(result);
-        })
-
-      app.post('/bookings', async (req, res) => {
-          const booking = req.body;
-          const result = await bookingsCollection.insertOne(booking);
-          res.send(result)
-      })
-
-      app.delete('/bookings/:id', async (req, res)=>{
-           const id = req.params.id;
-           const filter = { _id: ObjectId(id) };
-           const result = await bookingsCollection.deleteOne(filter);
-           res.send(result);
-      })
       
   } finally {
   }
