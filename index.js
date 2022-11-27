@@ -123,7 +123,7 @@ async function run() {
     });
 
     // * seller products
-    app.get("/sellerProducts/:email", async (req, res) => {
+    app.get("/sellerProducts/:email",verifyJWT, async (req, res) => {
       const email = req.params.email;
       //   console.log(email);
       const filter = { seller_email: email };
@@ -131,7 +131,7 @@ async function run() {
       res.send(products);
     });
 
-    app.delete("/sellerProducts/:id", async (req, res) => {
+    app.delete("/sellerProducts/:id",verifyJWT, async (req, res) => {
       const id = req.params.id;
       const filter = { _id: ObjectId(id) };
       //   console.log(filter);
@@ -140,7 +140,7 @@ async function run() {
     });
 
     //* add advertise
-    app.post("/advertiseProduct", async (req, res) => {
+    app.post("/advertiseProduct",verifyJWT, async (req, res) => {
       const product = req.body;
       console.log(product);
       const result = await adsCollection.insertOne(product);
@@ -154,6 +154,14 @@ async function run() {
       const items = await bookingsCollection.find(filter).toArray();
       res.send(items);
     });
+      
+    app.get("/bookings/myBuyers/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+      const filter = { seller_email: email };
+      const items = await bookingsCollection.find(filter).toArray();
+      res.send(items);
+    });
+      
     app.get("/bookings/paid/:email", verifyJWT, async (req, res) => {
       const email = req.params.email;
       const filter = {
