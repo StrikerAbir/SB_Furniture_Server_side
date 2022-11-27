@@ -25,7 +25,7 @@ const client = new MongoClient(uri, {
 
 function verifyJWT(req, res, next) {
   const authHeader = req.headers.authorization;
-  console.log(authHeader);
+  //   console.log(authHeader);
   if (!authHeader) {
     return res.status(401).send("unauthorized access");
   }
@@ -49,13 +49,14 @@ async function run() {
     const usersCollection = client.db("sbFurniture").collection("users");
     const bookingsCollection = client.db("sbFurniture").collection("bookings");
     const paymentsCollection = client.db("sbFurniture").collection("payments");
+    const adsCollection = client.db("sbFurniture").collection("ads");
 
     //* JWT
     app.get("/jwt", async (req, res) => {
       const email = req.query.email;
       const query = { email: email };
       const user = await usersCollection.findOne(query);
-      console.log(user);
+      //   console.log(user);
       if (user) {
         const token = jwt.sign({ email }, secret, { expiresIn: "7d" });
         return res.send({ accessToken: token });
@@ -66,7 +67,7 @@ async function run() {
     //* Users
     app.post("/users", async (req, res) => {
       const user = req.body;
-    //   console.log(user);
+      //   console.log(user);
       const filter = { email: user.email };
       const email = await usersCollection.findOne(filter);
       if (email) {
@@ -79,11 +80,11 @@ async function run() {
 
     app.get("/users/userType/:email", async (req, res) => {
       const email = req.params.email;
-    //   console.log(email);
+      //   console.log(email);
       const query = { email: email };
       const user = await usersCollection.findOne(query);
       const userType = user?.user_type;
-      console.log(userType);
+      //   console.log(userType);
       res.send({ type: userType });
     });
 
@@ -120,23 +121,31 @@ async function run() {
       const products = await productsCollection.find(query).toArray();
       res.send(products);
     });
-      
+
     // * seller products
-      app.get('/sellerProducts/:email', async (req, res) => {
-          const email = req.params.email;
-          console.log(email);
-          const filter = { seller_email: email }
-          const products = await productsCollection.find(filter).toArray();
-          res.send(products)
-      })  
-      
-      app.delete("/sellerProducts/:id", async (req, res) => {
-        const id = req.params.id;
-          const filter = { _id: ObjectId(id) };
-          console.log(filter);
-        const result = await productsCollection.deleteOne(filter);
-        res.send(result);
-      });
+    app.get("/sellerProducts/:email", async (req, res) => {
+      const email = req.params.email;
+      //   console.log(email);
+      const filter = { seller_email: email };
+      const products = await productsCollection.find(filter).toArray();
+      res.send(products);
+    });
+
+    app.delete("/sellerProducts/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      //   console.log(filter);
+      const result = await productsCollection.deleteOne(filter);
+      res.send(result);
+    });
+
+    //* add advertise
+    app.post("/advertiseProduct", async (req, res) => {
+      const product = req.body;
+      console.log(product);
+      const result = await adsCollection.insertOne(product);
+      res.send(result);
+    });
 
     //* bookings
     app.get("/bookings/:email", verifyJWT, async (req, res) => {
@@ -147,10 +156,10 @@ async function run() {
     });
     app.get("/bookings/paid/:email", verifyJWT, async (req, res) => {
       const email = req.params.email;
-        const filter = {
-            buyer_email: email,
-            status: 'Paid'
-        };
+      const filter = {
+        buyer_email: email,
+        status: "Paid",
+      };
       const items = await bookingsCollection.find(filter).toArray();
       res.send(items);
     });
@@ -177,9 +186,9 @@ async function run() {
     });
 
     // * payment related
-    app.post("/create-payment-intent",verifyJWT, async (req, res) => {
-        const booking = req.body;
-        
+    app.post("/create-payment-intent", verifyJWT, async (req, res) => {
+      const booking = req.body;
+
       const price = parseInt(booking.resale_price);
       const amount = price * 100;
 
@@ -188,30 +197,28 @@ async function run() {
         amount: amount,
         payment_method_types: ["card"],
       });
-        // console.log(paymentIntent);
+      // console.log(paymentIntent);
       res.send({
         clientSecret: paymentIntent.client_secret,
       });
     });
-      
-      app.post("/payments",verifyJWT, async (req, res) => {
-        const payment = req.body;
-        const result = await paymentsCollection.insertOne(payment);
-        const id = payment.bookingId;
-        const filter = { _id: ObjectId(id) };
-        const updatedDoc = {
-          $set: {
-            status:"Paid",
-          },
-        };
-        const updatedResult = await bookingsCollection.updateOne(
-          filter,
-          updatedDoc
-        );
-        res.send(updatedResult);
-      });
-      
-      
+
+    app.post("/payments", verifyJWT, async (req, res) => {
+      const payment = req.body;
+      const result = await paymentsCollection.insertOne(payment);
+      const id = payment.bookingId;
+      const filter = { _id: ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          status: "Paid",
+        },
+      };
+      const updatedResult = await bookingsCollection.updateOne(
+        filter,
+        updatedDoc
+      );
+      res.send(updatedResult);
+    });
   } finally {
   }
 }
