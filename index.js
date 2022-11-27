@@ -80,6 +80,23 @@ async function run() {
       }
     });
 
+     app.get("/users/status", async (req, res) => {
+       const type = req.query.type;
+       //   console.log(email);
+       const query = { user_type: type };
+       const users = await usersCollection.find(query).toArray();
+       //   console.log(userType);
+       res.send(users);
+     });
+     app.get("/users/status/email", async (req, res) => {
+       const email = req.query.email;
+
+       const query = { email: email };
+       const users = await usersCollection.findOne(query);
+console.log(users);
+       res.send(users);
+     });
+
     app.get("/users/userType/:email", async (req, res) => {
       const email = req.params.email;
       //   console.log(email);
@@ -89,6 +106,24 @@ async function run() {
       //   console.log(userType);
       res.send({ type: userType });
     });
+
+      app.put('/status', async (req, res) => {
+          const email = req.query.email;
+          const filter = { email: email };
+          const options = { upsert: true };
+          const updatedDoc = {
+              $set: {
+                  seller_verified: "verified"
+                },
+            };
+
+          const result = await usersCollection.updateOne(
+        filter,
+        updatedDoc,
+        options
+          );
+      res.send(result);
+      })
 
     //* categories
     app.get("/categories", async (req, res) => {
