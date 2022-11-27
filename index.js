@@ -149,20 +149,20 @@ async function run() {
       //   console.log(filter);
       const category = await categoriesCollection.findOne(filter);
       const name = category.category_name;
-        const allProducts = await productsCollection.find(filter).toArray();
-        const products = allProducts.filter(product => {
-            if (product.status !== 'Paid') {
-                return product
-            }else{return}
-        })
-        // console.log(products);
+      const allProducts = await productsCollection.find(filter).toArray();
+      const products = allProducts.filter((product) => {
+        if (product.status !== "Paid") {
+          return product;
+        }
+      });
+      // console.log(products);
       res.send({ products, name });
     });
 
     //* single product for individual categories
     app.get("/product/:id", async (req, res) => {
       const id = req.params.id;
-      //   console.log(id);
+      console.log(id);
       const filter = { _id: ObjectId(id) };
       const product = await productsCollection.findOne(filter);
       res.send(product);
@@ -179,6 +179,27 @@ async function run() {
       const result = await productsCollection.insertOne(product);
       res.send(result);
     });
+      app.put("/product/:id", async (req, res) => {
+          const product = req.body;
+          const id = req.params.id;
+          const filter = { _id: ObjectId(id) }
+          console.log(filter);
+          const options = { upsert: true };
+          const updatedDoc = {
+            $set: {
+              title: product.title,
+              location: product.location,
+              resale_price: product.resale_price,
+              original_price: product.original_price,
+              years_of_use: product.years_of_use,
+              seller_phone: product.seller_phone,
+              description: product.description,
+            },
+          };
+          const result = await productsCollection.updateOne(filter, updatedDoc, options);
+          console.log(result);
+          res.send(result)
+      })
 
     // * seller products
     app.get("/sellerProducts/:email", verifyJWT, async (req, res) => {
@@ -204,6 +225,13 @@ async function run() {
       const result = await adsCollection.insertOne(product);
       res.send(result);
     });
+
+    app.get("/ads", async (req, res) => {
+      const query = {};
+      const ads = await adsCollection.find(query).toArray();
+      res.send(ads);
+    });
+
     app.get("/adsProducts/:email", verifyJWT, async (req, res) => {
       const email = req.params.email;
       const filter = { seller_email: email };
@@ -300,13 +328,17 @@ async function run() {
       );
       const query = { _id: productId };
       console.log(query);
-        const adDelete = await adsCollection.deleteOne(query);
-        // update product status
+      const adDelete = await adsCollection.deleteOne(query);
+      // update product status
       const options = { upsert: true };
-        const match = { _id: ObjectId(productId) };
-        // console.log(match);
-        const updateProduct = await productsCollection.updateOne(match, updatedDoc, options);
-        // console.log(updateProduct);
+      const match = { _id: ObjectId(productId) };
+      // console.log(match);
+      const updateProduct = await productsCollection.updateOne(
+        match,
+        updatedDoc,
+        options
+      );
+      // console.log(updateProduct);
       res.send(updatedResult);
     });
   } finally {
