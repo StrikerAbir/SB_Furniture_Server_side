@@ -194,7 +194,7 @@ async function run() {
     //* add advertise
     app.post("/advertiseProduct", verifyJWT, async (req, res) => {
       const product = req.body;
-      console.log(product);
+    //   console.log(product);
       const result = await adsCollection.insertOne(product);
       res.send(result);
     });
@@ -279,7 +279,8 @@ async function run() {
     app.post("/payments", verifyJWT, async (req, res) => {
       const payment = req.body;
       const result = await paymentsCollection.insertOne(payment);
-      const id = payment.bookingId;
+        const id = payment.bookingId;
+        const productId=payment.productId;
       const filter = { _id: ObjectId(id) };
       const updatedDoc = {
         $set: {
@@ -289,7 +290,10 @@ async function run() {
       const updatedResult = await bookingsCollection.updateOne(
         filter,
         updatedDoc
-      );
+        );
+        const query = { _id: productId };
+        console.log(query);
+       const adDelete= await adsCollection.deleteOne(query);
       res.send(updatedResult);
     });
   } finally {
