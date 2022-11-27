@@ -120,11 +120,37 @@ async function run() {
       const products = await productsCollection.find(query).toArray();
       res.send(products);
     });
+      
+    // * seller products
+      app.get('/sellerProducts/:email', async (req, res) => {
+          const email = req.params.email;
+          console.log(email);
+          const filter = { seller_email: email }
+          const products = await productsCollection.find(filter).toArray();
+          res.send(products)
+      })  
+      
+      app.delete("/sellerProducts/:id", async (req, res) => {
+        const id = req.params.id;
+          const filter = { _id: ObjectId(id) };
+          console.log(filter);
+        const result = await productsCollection.deleteOne(filter);
+        res.send(result);
+      });
 
     //* bookings
     app.get("/bookings/:email", verifyJWT, async (req, res) => {
       const email = req.params.email;
       const filter = { buyer_email: email };
+      const items = await bookingsCollection.find(filter).toArray();
+      res.send(items);
+    });
+    app.get("/bookings/paid/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+        const filter = {
+            buyer_email: email,
+            status: 'Paid'
+        };
       const items = await bookingsCollection.find(filter).toArray();
       res.send(items);
     });
@@ -151,7 +177,7 @@ async function run() {
     });
 
     // * payment related
-    app.post("/create-payment-intent", async (req, res) => {
+    app.post("/create-payment-intent",verifyJWT, async (req, res) => {
         const booking = req.body;
         
       const price = parseInt(booking.resale_price);
@@ -168,7 +194,7 @@ async function run() {
       });
     });
       
-      app.post("/payments", async (req, res) => {
+      app.post("/payments",verifyJWT, async (req, res) => {
         const payment = req.body;
         const result = await paymentsCollection.insertOne(payment);
         const id = payment.bookingId;
