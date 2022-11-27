@@ -51,8 +51,6 @@ async function run() {
     const paymentsCollection = client.db("sbFurniture").collection("payments");
     const adsCollection = client.db("sbFurniture").collection("ads");
 
-    
-
     //* JWT
     app.get("/jwt", async (req, res) => {
       const email = req.query.email;
@@ -80,22 +78,22 @@ async function run() {
       }
     });
 
-     app.get("/users/status", async (req, res) => {
-       const type = req.query.type;
-       //   console.log(email);
-       const query = { user_type: type };
-       const users = await usersCollection.find(query).toArray();
-       //   console.log(userType);
-       res.send(users);
-     });
-     app.get("/users/status/email", async (req, res) => {
-       const email = req.query.email;
+    app.get("/users/status", async (req, res) => {
+      const type = req.query.type;
+      //   console.log(email);
+      const query = { user_type: type };
+      const users = await usersCollection.find(query).toArray();
+      //   console.log(userType);
+      res.send(users);
+    });
+    app.get("/users/status/email", async (req, res) => {
+      const email = req.query.email;
 
-       const query = { email: email };
-       const users = await usersCollection.findOne(query);
-console.log(users);
-       res.send(users);
-     });
+      const query = { email: email };
+      const users = await usersCollection.findOne(query);
+      // console.log(users);
+      res.send(users);
+    });
 
     app.get("/users/userType/:email", async (req, res) => {
       const email = req.params.email;
@@ -107,22 +105,33 @@ console.log(users);
       res.send({ type: userType });
     });
 
-      app.put('/status', async (req, res) => {
-          const email = req.query.email;
-          const filter = { email: email };
-          const options = { upsert: true };
-          const updatedDoc = {
-              $set: {
-                  seller_verified: "verified"
-                },
-            };
+    app.put("/status", async (req, res) => {
+      const email = req.query.email;
+      const filter = { email: email };
+      const options = { upsert: true };
+      const updatedDoc = {
+        $set: {
+          seller_verified: "verified",
+        },
+      };
 
-          const result = await usersCollection.updateOne(
+      const result = await usersCollection.updateOne(
         filter,
         updatedDoc,
         options
-          );
+      );
       res.send(result);
+    });
+
+      app.delete('/users/:email', async (req, res) => {
+          const email = req.params.email;
+          console.log(email);
+          const filter = { email: email }
+          const query = { seller_email: email }
+          await productsCollection.deleteMany(query);
+          await adsCollection.deleteMany(query);
+          const result = await usersCollection.deleteOne(filter);
+          res.send(result)
       })
 
     //* categories
@@ -137,7 +146,7 @@ console.log(users);
     app.get("/categories/products", async (req, res) => {
       const id = req.query.cat_id;
       const filter = { category_id: id };
-    //   console.log(filter);
+      //   console.log(filter);
       const category = await categoriesCollection.findOne(filter);
       const name = category.category_name;
       const products = await productsCollection.find(filter).toArray();
@@ -177,7 +186,7 @@ console.log(users);
     app.delete("/sellerProducts/:id", verifyJWT, async (req, res) => {
       const id = req.params.id;
       const filter = { _id: ObjectId(id) };
-        // console.log(filter);
+      // console.log(filter);
       const result = await productsCollection.deleteOne(filter);
       res.send(result);
     });
@@ -189,19 +198,19 @@ console.log(users);
       const result = await adsCollection.insertOne(product);
       res.send(result);
     });
-      app.get('/adsProducts/:email', verifyJWT, async (req, res) => {
-          const email = req.params.email;
-          const filter = { seller_email: email };
-          const result = await adsCollection.find(filter).toArray();
-          res.send(result)
-      });
+    app.get("/adsProducts/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+      const filter = { seller_email: email };
+      const result = await adsCollection.find(filter).toArray();
+      res.send(result);
+    });
 
-      app.delete("/adsDelete/:id",verifyJWT, async (req, res) => {
-        const id = req.params.id;
-        const filter = { _id: id };
-        const result = await adsCollection.deleteOne(filter);
-        res.send(result);
-      });
+    app.delete("/adsDelete/:id", verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: id };
+      const result = await adsCollection.deleteOne(filter);
+      res.send(result);
+    });
 
     //* bookings
     app.get("/bookings/:email", verifyJWT, async (req, res) => {
@@ -266,8 +275,6 @@ console.log(users);
         clientSecret: paymentIntent.client_secret,
       });
     });
-      
-      
 
     app.post("/payments", verifyJWT, async (req, res) => {
       const payment = req.body;
