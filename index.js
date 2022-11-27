@@ -149,7 +149,13 @@ async function run() {
       //   console.log(filter);
       const category = await categoriesCollection.findOne(filter);
       const name = category.category_name;
-      const products = await productsCollection.find(filter).toArray();
+        const allProducts = await productsCollection.find(filter).toArray();
+        const products = allProducts.filter(product => {
+            if (product.status !== 'Paid') {
+                return product
+            }else{return}
+        })
+        // console.log(products);
       res.send({ products, name });
     });
 
@@ -298,9 +304,9 @@ async function run() {
         // update product status
       const options = { upsert: true };
         const match = { _id: ObjectId(productId) };
-        console.log(match);
+        // console.log(match);
         const updateProduct = await productsCollection.updateOne(match, updatedDoc, options);
-        console.log(updateProduct);
+        // console.log(updateProduct);
       res.send(updatedResult);
     });
   } finally {
