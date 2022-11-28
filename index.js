@@ -49,7 +49,19 @@ async function run() {
     const usersCollection = client.db("sbFurniture").collection("users");
     const bookingsCollection = client.db("sbFurniture").collection("bookings");
     const paymentsCollection = client.db("sbFurniture").collection("payments");
-    const adsCollection = client.db("sbFurniture").collection("ads");
+      const adsCollection = client.db("sbFurniture").collection("ads");
+      
+       const verifyAdmin = async (req, res, next) => {
+         const decodedEmail = req.decoded.email;
+           const query = { email: decodedEmail };
+        //    console.log(query);
+           const user = await usersCollection.findOne(query);
+        //    console.log(user);
+         if (user?.user_type !== "Admin") {
+           return res.status(403).send({ message: "forbidden access.." });
+         }
+         next();
+       };
 
     //* JWT
     app.get("/jwt", async (req, res) => {
@@ -78,7 +90,7 @@ async function run() {
       }
     });
 
-    app.get("/users/status", async (req, res) => {
+    app.get("/users/status",verifyJWT,verifyAdmin, async (req, res) => {
       const type = req.query.type;
       //   console.log(email);
       const query = { user_type: type };
@@ -101,7 +113,7 @@ async function run() {
       const query = { email: email };
       const user = await usersCollection.findOne(query);
       const userType = user?.user_type;
-      //   console.log(userType);
+        console.log(userType);
       res.send({ type: userType });
     });
 
@@ -341,6 +353,7 @@ async function run() {
       // console.log(updateProduct);
       res.send(updatedResult);
     });
+
   } finally {
   }
 }
